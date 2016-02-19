@@ -34,7 +34,7 @@ int main(void)
 			{
 				nowLen = printf("%I64d", a[i][j]);
 				for (k = nowLen - 1; k < mxLen; k++)
-				printf(" ");
+					printf(" ");
 			}
 	}
 	for (i = 0; i < n; i++) {
