@@ -32,7 +32,7 @@ int main(void)
 		for (i = y1 - 1; i < y2; i++, printf("\n"))
 			for (j = x1 - 1; j < x2; j++)
 			{
-				nowLen = printf("%I64d", a[i][j]);
+				nowLen = printf("%lld", a[i][j]);
 				for (k = nowLen - 1; k < mxLen; k++)
 					printf(" ");
 			}
