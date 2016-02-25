@@ -5,6 +5,7 @@
 #define elif else if
 
 typedef struct hum {
+	int id;
 	char name[30], tel[16];
 	char sname[30];
 };
@@ -14,51 +15,10 @@ typedef struct vector {
 	int n, mx;
 };
 
-void vecInit(struct vector *vec) {
-	vec->m = (struct hum *) malloc(4 * sizeof(struct hum));
-	vec->n = 0, vec->mx = 4;
-}
-
-void vecAdd(struct hum h, struct vector *vec) {
-	struct hum *tmp;
-	int i;
-	if (vec->n + 1 == vec->mx) {
-		if ((tmp = (struct hum *) malloc(vec->mx * 2 * sizeof(struct hum))) == NULL) {
-			printf("\nFATAL ERROR OF MEMORY ADDITION\n");
-			free(vec->m);
-			exit(1);
-		}
-		for (i = 0; i < vec->n; i++)
-			tmp[i] = vec->m[i];
-		free(vec->m);
-		vec->m = tmp;
-		vec->mx *= 2;
-	}
-	vec->m[vec->n++] = h;
-}
-
-char vecDel(struct vector *vec, int id) {
-	if (id < 0 || id > vec->mx)
-		return 0;
-	vec->m[id].name[0] = 0;
-	vec->m[id].tel[0] = 0;
-	return 1;
-}
-
-void printVec(struct vector vec) {                //debug stuff
-	int i;
-	fprintf(stderr, "Telephone book contains:\n");
-	for (i = 0; i < vec.n; i++)
-		if (vec.m[i].name[0] != 0)
-			fprintf(stderr, "%3d: %s %s\n", i, vec.m[i].name, vec.m[i].tel);
-	fprintf(stderr, "\n");
-}
-
-void saveVec(struct vector *vec, FILE *out) {
-	int i;
-	for (i = 0; i < vec->n; i++)
-		if (vec->m[i].name[0] != 0)
-			fprintf(out, "%s %s\n", vec->m[i].name, vec->m[i].tel);
+void humSwap(struct hum *a, struct hum *b) {
+	struct hum c = *a;
+	*a = *b;
+	*b = c;
 }
 
 char strCmp(char *s1, char *s2) {
@@ -86,6 +46,97 @@ void bigToSmall(char *s) {
 	}
 }
 
+void vecInit(struct vector *vec) {
+	vec->m = (struct hum *) malloc(4 * sizeof(struct hum));
+	vec->n = 0, vec->mx = 4;
+}
+
+void vecClose(struct vector *vec) {
+	free(vec->m);
+	vec->n = vec->mx = 0;
+}
+
+void vecAdd(struct hum h, struct vector *vec) {
+	struct hum *tmp;
+	int i;
+	if (vec->n == vec->mx) {
+		if ((tmp = (struct hum *) malloc(vec->mx * 2 * sizeof(struct hum))) == NULL) {
+			printf("\nFATAL ERROR OF MEMORY ADDITION\n");
+			free(vec->m);
+			exit(1);
+		}
+		for (i = 0; i < vec->n; i++)
+			tmp[i] = vec->m[i];
+		free(vec->m);
+		vec->m = tmp;
+		vec->mx *= 2;
+	}
+	vec->m[vec->n++] = h;
+}
+
+char vecDel(struct vector *vec, int id) {
+	int i;
+	char flag = 0;
+	struct hum *tmp;
+	if (id < 0 || id > vec->mx)
+		return 0;
+	for (i = 0; i < vec->n; i++)
+		if (vec->m[i].id == id) {
+			flag = 1;
+			break;
+		}
+	if (!flag)
+		return 0;
+	humSwap(&vec->m[i], &vec->m[vec->n - 1]);
+	vec->n--;
+	if (vec->n <= vec->mx / 4) {
+		if ((tmp = (struct hum *) malloc(vec->mx / 2 * sizeof(struct hum))) == NULL) {
+			printf("\nFATAL ERROE OF MEMORY ADDITION\n");
+			free(vec->m);
+			exit(1);
+		}
+		for (i = 0; i < vec->n; i++)
+			tmp[i] = vec->m[i];
+		free(vec->m);
+		vec->m = tmp;
+		vec->mx /= 2;
+	}
+	return 1;
+}
+
+char vecChange(int id, struct hum h, int what, struct vector *vec) { // what = {1 - name, 2 - tel, 3 - both
+	int i;
+	char flag = 0;
+	for (i = 0; i < vec->n; i++)
+		if (vec->m[i].id == id) {
+			flag = 1;
+			break;
+		}
+	if (!flag)
+		return 0;
+	if (what & 1)
+		strCpy(vec->m[i].name, h.name);
+	if ((what >> 1) & 1) {
+		strCpy(vec->m[i].sname, h.name);
+		bigToSmall(vec->m[i].sname);
+	}
+	return 1;
+}
+
+void printVec(struct vector vec) {                //debug stuff
+	int i;
+	fprintf(stderr, "Telephone book contains (%d of %d):\n", vec.n, vec.mx);
+	for (i = 0; i < vec.n; i++)
+		fprintf(stderr, "%3d: %s %s\n", vec.m[i].id, vec.m[i].name, vec.m[i].tel);
+	fprintf(stderr, "\n");
+}
+
+void saveVec(struct vector *vec, FILE *out) {
+	int i;
+	for (i = 0; i < vec->n; i++)
+		fprintf(out, "%s %s\n", vec->m[i].name, vec->m[i].tel);
+}
+
 void read(char *where) {
 	char c;
 	int i = 0;
@@ -97,11 +148,12 @@ void read(char *where) {
 
 char from8to7(char *s) {
 	int i = strlen(s);
-	if (s[0] != '8')
+	if (s[0] != '8') {
 		if ((s[0] >= '0' && s[0] <= '9') || s[0] == '+')
 			return 0;
 		else
 			return -1;
+	}
 	s[i + 1] = 0;
 	for (; i > 0; i--)
 			s[i] = s[i - 1];
@@ -113,7 +165,7 @@ void searchTel(char *s, struct vector *v) {
 	int i;
 	for (i = 0; i < v->n; i++)
 		if (!strCmp(v->m[i].tel, s))
-			printf("%d %s %s\n", i, v->m[i].name, v->m[i].tel);
+			printf("%d %s %s\n", v->m[i].id, v->m[i].name, v->m[i].tel);
 	printf("\n");
 }
 
@@ -131,7 +183,7 @@ void searchName(char *s, struct vector *v) {
 			while (k < lenS && v->m[i].sname[j + k] == s[k])
 				k++;
 			if (k == lenS) {
-				printf("%d %s %s\n", i, v->m[i].name, v->m[i].tel), flag = 1;
+				printf("%d %s %s\n", v->m[i].id, v->m[i].name, v->m[i].tel), flag = 1;
 			}
 		}
 	}
@@ -139,7 +191,7 @@ void searchName(char *s, struct vector *v) {
 
 
 int main(int argc, char *argv[]) {
-	int i;
+	int i, nowId = 0;
 	char command[50], s[80], last = 0;
 	struct hum h;
 	struct vector book;
@@ -161,6 +213,7 @@ int main(int argc, char *argv[]) {
 				break;
 			strCpy(h.sname, h.name);
 			bigToSmall(h.sname);
+			h.id = nowId++;
 			vecAdd(h, &book);
 		}
 		last = 'r';
@@ -184,15 +237,17 @@ int main(int argc, char *argv[]) {
 			strCpy(h.sname, h.name);
 			bigToSmall(h.sname);
 			read(h.tel);
+			h.id = nowId++;
 			from8to7(h.tel);                           // RLY needed?
 			vecAdd(h, &book);
-			if (last != 'w' && last != 'W')
+			if (last != 'w' && last != 'W') {
 				if (last == 0)
 					db = fopen(argv[1], "wt"), last = 'w';
 				else {
 					fclose(db);
 					db = fopen(argv[1], "w+"), last = 'W';
 				}
+			}
 			fprintf(db, "%s %s\n", h.name, h.tel);
 		} elif (!strCmp(command, "delete")) {
 			scanf("%d", &i);
@@ -206,11 +261,9 @@ int main(int argc, char *argv[]) {
 			scanf("%d %s", &i, s);
 			read(h.name);                              // name or tel - tmp (name > tel)
 			if (!strCmp(s, "name")) {                  // unsafe
-				strCpy(book.m[i].name, h.name);
-				strCpy(book.m[i].sname, h.name);
-				bigToSmall(book.m[i].sname);
+				vecChange(i, h, 1, &book);
 			} elif (!strCmp(s, "number")) {
-				strCpy(book.m[i].tel, h.name);
+				vecChange(i, h, 2, &book);
 			} else
 				fprintf(stderr, "Error: %s is not \"name\" of \"number\"\n", s);
 			if (last != 0) {
@@ -232,5 +285,6 @@ int main(int argc, char *argv[]) {
 		} else
 			fprintf(stderr, "Error: %s - not a command\n", command);
 	}
+	vecClose(&book);
 	return 0;
 }
