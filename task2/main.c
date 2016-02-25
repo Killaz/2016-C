@@ -45,16 +45,16 @@ char vecDel(struct vector *vec, int id) {
 	return 1;
 }
 
-void printVec(vector vec) {                //debug stuff
+void printVec(struct vector vec) {                //debug stuff
 	int i;
-	fprintf(stderr, "Telephon book contains:\n");
+	fprintf(stderr, "Telephone book contains:\n");
 	for (i = 0; i < vec.n; i++)
 		if (vec.m[i].name[0] != 0)
 			fprintf(stderr, "%3d: %s %s\n", i, vec.m[i].name, vec.m[i].tel);
 	fprintf(stderr, "\n");
 }
 
-void saveVec(vector *vec, FILE *out) {
+void saveVec(struct vector *vec, FILE *out) {
 	int i;
 	for (i = 0; i < vec->n; i++)
 		if (vec->m[i].name[0] != 0)
@@ -150,8 +150,8 @@ int main(int argc, char *argv[]) {
 		return 1;
 #else
 		argc = 2;
-		argv = (char **) realloc(argv, sizeof(argv) + sizeof("test.book") * 3);
-		argv[1] = (char *) realloc(argv[1], sizeof("test.book") * 2);
+		argv = (char **) realloc(argv, sizeof(argv) + sizeof(char **));
+		argv[1] = (char *) realloc(argv[1], sizeof("test.book"));
 		strCpy(argv[1], "test.book");
 #endif
 	}
@@ -219,15 +219,18 @@ int main(int argc, char *argv[]) {
 				last = 'w';
 			} else
 				fprintf(stderr, "\nFATAL ERROR: something changed, without file of saving => no people in book\n"
-						"Coninue working, ignoring writing out of memory\n");
+				                "Continue working, ignoring writing out of memory\n");
 		} elif (!strCmp(command, "help")) {
-			fprintf(stderr, "@Help (with debug info):\n  \"create <name> <tel. number>\" - add person to base\n  \"find <number>\" or \"find <part of name>\" - get list of searched persons\n"
-				   "  \"change <id> name <new name>\" or \"change <id> number <new tel. number>\" - change existing person's info\n  delete <id> - delete person from base\n"
-				   "  \"find *\" - print all info from database\n  \"exit\" - quit application (information is saved after every action)\n");
+			fprintf(stderr, "@Help (with debug info):\n  \"create <name> <tel. number>\" - add person to base\n"
+				   "  \"find <number>\" or \"find <part of name>\" - get list of found persons\n"
+				   "  \"find *\" - print all info from database\n"
+				   "  \"change <id> name <new name>\" or \"change <id> number <new tel. number>\" - change existing person's info\n"
+				   "  \"delete <id>\" - delete person from base\n"
+				   "  \"exit\" - quit application (information is saved after every action)\n");
 		} elif (!strCmp(command, "exit")) {
 			break;
 		} else
 			fprintf(stderr, "Error: %s - not a command\n", command);
-	}	
+	}
 	return 0;
 }
