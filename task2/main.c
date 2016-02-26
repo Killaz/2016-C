@@ -11,7 +11,7 @@ struct string {
 
 struct hum {
 	int id;
-	struct string name, tel, sname;
+	struct string name, sname, tel, stel;
 };
 
 struct vector {
@@ -65,6 +65,7 @@ void humInit(struct hum *h) {
 	stringInit(&h->name);
 	stringInit(&h->sname);
 	stringInit(&h->tel);
+	stringInit(&h->stel);
 	h->id = -1;
 }
 
@@ -76,9 +77,22 @@ void stringClose(struct string *str) {
 	str->n = str->mx = 0;
 }
 
+void humClose(struct hum *h) {
+	if (h == NULL)
+		return;
+	stringClose(&h->name);
+	stringClose(&h->name);
+	stringClose(&h->name);
+	stringClose(&h->name);
+	h->id = -1;
+}
+
 void vecClose(struct vector *vec) {
+	int i;
 	if(vec == NULL)
 		return;
+	for (i = 0; i < vec->n; i++)
+		humClose(&vec->m[i]);
 	free(vec->m);
 	vec->m = NULL;
 	vec->n = vec->mx = 0;
@@ -97,6 +111,8 @@ void stringCopy(struct string *where, struct string *from) {
 void stringAdd(char c, struct string *str) {
 	char *tmp;
 	int i;
+	if (str == NULL)
+		return;
 	if (str->n + 1 == str->mx) {
 		if ((tmp = (char *) malloc(str->mx * 2 * sizeof(char *))) == NULL) {
 			printf("\nFATAL ERROR OF MEMORY ADDITION (stringAdd)\n");
@@ -116,6 +132,8 @@ void stringAdd(char c, struct string *str) {
 void vecAdd(struct hum h, struct vector *vec) {
 	struct hum *tmp;
 	int i;
+	if (vec == NULL)
+		return;
 	if (vec->n == vec->mx) {
 		if ((tmp = (struct hum *) malloc(vec->mx * 2 * sizeof(struct hum))) == NULL) {
 			printf("\nFATAL ERROR OF MEMORY ADDITION (vecAdd)\n");
@@ -132,11 +150,14 @@ void vecAdd(struct hum h, struct vector *vec) {
 	stringCopy(&vec->m[vec->n].name, &h.name);
 	stringCopy(&vec->m[vec->n].sname, &h.sname);
 	stringCopy(&vec->m[vec->n].tel, &h.tel);
+	stringCopy(&vec->m[vec->n].stel, &h.stel);
 	vec->m[vec->n].id = h.id;
 	vec->n++;
 }
 
 void stringClear(struct string *str) {
+	if (str == NULL)
+		return;
 	stringClose(str);
 	stringInit(str);
 }
@@ -159,6 +180,7 @@ char vecDel(struct vector *vec, int id) {
 	stringClose(&vec->m[vec->n].name);
 	stringClose(&vec->m[vec->n].sname);
 	stringClose(&vec->m[vec->n].tel);
+	stringClose(&vec->m[vec->n].stel);
 	if (vec->n <= vec->mx / 4) {
 		if ((tmp = (struct hum *) malloc(vec->mx / 2 * sizeof(struct hum))) == NULL) {
 			printf("\nFATAL ERROR OF MEMORY ADDITION (vecDel)\n");
@@ -189,8 +211,10 @@ char vecChange(int id, struct hum h, int what, struct vector *vec) { // what = {
 		stringCopy(&vec->m[i].sname, &h.name);
 		bigToSmall(vec->m[i].sname.s);
 	}
-	if ((what >> 1) & 1)
+	if ((what >> 1) & 1) {
 		stringCopy(&vec->m[i].tel, &h.tel);
+		stringCopy(&vec->m[i].tel, &h.tel);
+	}
 	return 1;
 }
 
@@ -198,7 +222,7 @@ void printVec(struct vector vec) {                //debug stuff
 	int i;
 	fprintf(stderr, "Telephone book contains (%d of %d):\n", vec.n, vec.mx);
 	for (i = 0; i < vec.n; i++) {
-		fprintf(stderr, "%3d: %s (%s) %s\n", vec.m[i].id, vec.m[i].name.s, vec.m[i].sname.s, vec.m[i].tel.s);
+		fprintf(stderr, "%3d: %s (%s) %s (%s)\n", vec.m[i].id, vec.m[i].name.s, vec.m[i].sname.s, vec.m[i].tel.s, vec.m[i].stel.s);
 //		fprintf(stderr, "\b   ---   (%d of %d)\n", vec.m[i].name.n, vec.m[i].name.mx);
 	}
 	fprintf(stderr, "\n");
@@ -216,10 +240,13 @@ char stringScan(struct string *where) {
 	char c;
 	stringClear(where);
 	while ((c = getchar()) == ' ' || c == '\n')
-		;
+		if (c == '\n')
+			return 0;
 	if (c != -1)
 		stringAdd(c, where);
-	while ((c = getchar()) != ' ' && c != -1 && c != '\n') //13
+	else
+		return 0;
+	while ((c = getchar()) != ' ' && c != -1 && c != '\n')
 		stringAdd(c, where);
 	return where->n != 0;
 }
@@ -227,27 +254,51 @@ char stringScan(struct string *where) {
 char stringfScan(struct string *where, FILE *f) {
 	char c;
 	stringClear(where);
-	while ((c = fgetc(f)) != ' ' && c != -1 && c != '\n') //13
+	while ((c = fgetc(f)) != ' ' && c != -1 && c != '\n')
 		stringAdd(c, where);
 	return where->n != 0;
 }
 
-char read(struct string *where) {
+char read(struct string *where1, struct string *where2) {
 	char c;
-	stringClear(where);
-	while ((c = getchar()) != '\n' && c != -1) //13
+	stringClear(where1);
+	stringClear(where2);
+	while ((c = getchar()) == ' ' || c == '\n')
+		if (c == '\n')
+			return 0;
+	if (c != -1) {
+		stringAdd(c, where1);
 		if (c != ' ' && c != '(' && c != ')' && c != '-')
-			stringAdd(c, where);
-	return where->n != 0;
+			stringAdd(c, where2);
+	} else
+		return 0;
+	while ((c = getchar()) != '\n' && c != -1) {
+		stringAdd(c, where1);
+		if (c != ' ' && c != '(' && c != ')' && c != '-')
+			stringAdd(c, where2);
+	}
+	return where1->n != 0;
 }
 
-char readf(struct string *where, FILE *f) {
+char readf(struct string *where1, struct string *where2, FILE *f) {
 	char c;
-	stringClear(where);
-	while ((c = fgetc(f)) != '\n') //13
+	stringClear(where1);
+	stringClear(where2);
+	while ((c = fgetc(f)) == ' ' || c == '\n')
+		if (c == '\n')
+			return 0;
+	if (c != -1) {
+		stringAdd(c, where1);
 		if (c != ' ' && c != '(' && c != ')' && c != '-')
-			stringAdd(c, where);
-	return where->n != 0;
+			stringAdd(c, where2);
+	} else
+		return 0;
+	while ((c = fgetc(f)) != '\n') {
+		stringAdd(c, where1);
+		if (c != ' ' && c != '(' && c != ')' && c != '-')
+			stringAdd(c, where2);
+	}
+	return where1->n != 0;
 }
 
 char from8to7(char *s) {           // Changed meaning
@@ -268,7 +319,7 @@ char from8to7(char *s) {           // Changed meaning
 void searchTel(char *s, struct vector *v) {
 	int i;
 	for (i = 0; i < v->n; i++)
-		if (!strCmp(v->m[i].tel.s, s))
+		if (!strCmp(v->m[i].stel.s, s))
 			printf("%d %s %s\n", v->m[i].id, v->m[i].name.s, v->m[i].tel.s);
 	printf("\n");
 	fflush(stdout);
@@ -318,7 +369,7 @@ int main(int argc, char *argv[]) {
 	}
 	if ((db = fopen(argv[1], "rt")) != NULL) {
 		while(1) {
-			if (!(stringfScan(&h.name, db) && readf(&h.tel, db)))
+			if (!(stringfScan(&h.name, db) && readf(&h.tel, &h.stel, db)))
 				break;
 			stringCopy(&h.sname, &h.name);
 			bigToSmall(h.sname.s);
@@ -332,7 +383,7 @@ int main(int argc, char *argv[]) {
 		scanf("%s", command);
 		bigToSmall(command);
 		if (!strCmp(command, "find")) {
-			read(&s);
+			read(&s, NULL);
 			if (!strCmp(s.s, "*"))
 				printVec(book);
 			i = from8to7(s.s);
@@ -345,7 +396,7 @@ int main(int argc, char *argv[]) {
 			stringScan(&h.name);
 			stringCopy(&h.sname, &h.name);
 			bigToSmall(h.sname.s);
-			read(&h.tel);
+			read(&h.tel, &h.stel);
 			h.id = nowId++;
 			from8to7(h.tel.s);                           // RLY needed?
 			vecAdd(h, &book);
@@ -373,11 +424,11 @@ int main(int argc, char *argv[]) {
 				stringScan(&h.name);
 				vecChange(i, h, 1, &book);
 			} elif (!strCmp(s.s, "number")) {
-				read(&h.tel);
+				read(&h.tel, &h.stel);
 				vecChange(i, h, 2, &book);
 			} elif (!strCmp(s.s, "both")) {
 				stringScan(&h.name);
-				read(&h.tel);
+				read(&h.tel, &h.stel);
 				vecChange(i, h, 3, &book);
 			} else
 				fprintf(stderr, "Error: %s is not \"name\", \"number\" or \"both\"\n", s.s);
