@@ -71,7 +71,6 @@ void humInit(struct hum *h) {
 void stringClose(struct string *str) {
 	if (str->s == NULL)
 		return;
-//	printf("s(%d of %d) = %s\n", str->n, str->mx, str->s);
 	free(str->s);
 	str->s = NULL;
 	str->n = str->mx = 0;
@@ -203,12 +202,14 @@ void printVec(struct vector vec) {                //debug stuff
 //		fprintf(stderr, "\b   ---   (%d of %d)\n", vec.m[i].name.n, vec.m[i].name.mx);
 	}
 	fprintf(stderr, "\n");
+	fflush(stderr);
 }
 
 void saveVec(struct vector *vec, FILE *out) {
 	int i;
 	for (i = 0; i < vec->n; i++)
 		fprintf(out, "%s %s\n", vec->m[i].name.s, vec->m[i].tel.s);
+	fflush(out);
 }
 
 char stringScan(struct string *where) {
@@ -270,6 +271,7 @@ void searchTel(char *s, struct vector *v) {
 		if (!strCmp(v->m[i].tel.s, s))
 			printf("%d %s %s\n", v->m[i].id, v->m[i].name.s, v->m[i].tel.s);
 	printf("\n");
+	fflush(stdout);
 }
 
 void searchName(char *s, struct vector *v) {
@@ -290,6 +292,7 @@ void searchName(char *s, struct vector *v) {
 			}
 		}
 	}
+	fflush(stdout);
 }
 
 
