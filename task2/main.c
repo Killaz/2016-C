@@ -28,11 +28,11 @@ void humSwap(struct hum *a, struct hum *b) {
 char strCmp(char *s1, char *s2) {
 	unsigned int len, i;
 	if ((len = strlen(s1)) != strlen(s2))
-		return 1;
+		return 0;
 	for (i = 0; i < len; i++)
 		if (s1[i] != s2[i])
-			return 1;
-	return 0;
+			return 0;
+	return 1;
 }
 
 void strCpy(char *where, char *from) {
@@ -57,8 +57,8 @@ void stringInit(struct string *str) {
 }
 
 void vecInit(struct vector *vec) {
-	vec->m = (struct hum *) malloc(4 * sizeof(struct hum));
-	vec->n = 0, vec->mx = 4;
+	vec->m = (struct hum *) malloc(1 * sizeof(struct hum));
+	vec->n = 0, vec->mx = 1;
 }
 
 void humInit(struct hum *h) {
@@ -162,7 +162,7 @@ void stringClear(struct string *str) {
 	stringInit(str);
 }
 
-char vecDel(struct vector *vec, int id) {
+char vecDel(int id, struct vector *vec) {
 	int i;
 	char flag = 0;
 	struct hum *tmp;
@@ -196,6 +196,11 @@ char vecDel(struct vector *vec, int id) {
 	return 1;
 }
 
+void vecClear(struct vector *vec) {
+	vecClose(vec);
+	vecInit(vec);
+}
+
 char vecChange(int id, struct hum h, int what, struct vector *vec) { // what = {1 - name, 2 - tel, 3 - both
 	int i;
 	char flag = 0;
@@ -213,7 +218,7 @@ char vecChange(int id, struct hum h, int what, struct vector *vec) { // what = {
 	}
 	if ((what >> 1) & 1) {
 		stringCopy(&vec->m[i].tel, &h.tel);
-		stringCopy(&vec->m[i].tel, &h.tel);
+		stringCopy(&vec->m[i].stel, &h.stel);
 	}
 	return 1;
 }
@@ -268,13 +273,13 @@ char read(struct string *where1, struct string *where2) {
 			return 0;
 	if (c != -1) {
 		stringAdd(c, where1);
-		if (c != ' ' && c != '(' && c != ')' && c != '-')
+		if (c != ' ' && c != '(' && c != ')' && c != '-' && c != '+')
 			stringAdd(c, where2);
 	} else
 		return 0;
 	while ((c = getchar()) != '\n' && c != -1) {
 		stringAdd(c, where1);
-		if (c != ' ' && c != '(' && c != ')' && c != '-')
+		if (c != ' ' && c != '(' && c != ')' && c != '-' && c != '+')
 			stringAdd(c, where2);
 	}
 	return where1->n != 0;
@@ -289,13 +294,13 @@ char readf(struct string *where1, struct string *where2, FILE *f) {
 			return 0;
 	if (c != -1) {
 		stringAdd(c, where1);
-		if (c != ' ' && c != '(' && c != ')' && c != '-')
+		if (c != ' ' && c != '(' && c != ')' && c != '-' && c != '+')
 			stringAdd(c, where2);
 	} else
 		return 0;
 	while ((c = fgetc(f)) != '\n') {
 		stringAdd(c, where1);
-		if (c != ' ' && c != '(' && c != ')' && c != '-')
+		if (c != ' ' && c != '(' && c != ')' && c != '-' && c != '+')
 			stringAdd(c, where2);
 	}
 	return where1->n != 0;
@@ -319,7 +324,7 @@ char from8to7(char *s) {           // Changed meaning
 void searchTel(char *s, struct vector *v) {
 	int i;
 	for (i = 0; i < v->n; i++)
-		if (!strCmp(v->m[i].stel.s, s))
+		if (strCmp(v->m[i].stel.s, s))
 			printf("%d %s %s\n", v->m[i].id, v->m[i].name.s, v->m[i].tel.s);
 	printf("\n");
 	fflush(stdout);
@@ -382,23 +387,24 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "\n@Book: ");
 		scanf("%s", command);
 		bigToSmall(command);
-		if (!strCmp(command, "find")) {
-			read(&s, NULL);
-			if (!strCmp(s.s, "*"))
+		if (strCmp(command, "find")) {
+			read(&h.tel, &h.stel);                     // name or number
+			if (strCmp(h.tel.s, "*"))
 				printVec(book);
-			i = from8to7(s.s);
+			i = from8to7(h.tel.s);
+			from8to7(h.stel.s);
 			if (i == -1) {                             // part of name
-				bigToSmall(s.s);
-				searchName(s.s, &book);
+				bigToSmall(h.tel.s);
+				searchName(h.tel.s, &book);
 			} else                                     // tel-number
-				searchTel(s.s, &book);
-		} elif (!strCmp(command, "create")) {
+				searchTel(h.stel.s, &book);
+		} elif (strCmp(command, "create")) {
 			stringScan(&h.name);
 			stringCopy(&h.sname, &h.name);
 			bigToSmall(h.sname.s);
 			read(&h.tel, &h.stel);
 			h.id = nowId++;
-			from8to7(h.tel.s);                           // RLY needed?
+			from8to7(h.tel.s);                         // RLY needed?
 			vecAdd(h, &book);
 			if (last != 'w' && last != 'W') {
 				if (last == 0)
@@ -409,24 +415,28 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			fprintf(db, "%s %s\n", h.name.s, h.tel.s);
-		} elif (!strCmp(command, "delete")) {
+		} elif (strCmp(command, "delete")) {
 			scanf("%d", &i);
-			vecDel(&book, i);
+			vecDel(i, &book);
+#ifdef DEBUG
+			if (i == -1)
+				vecClear(&book);
+#endif
 			if (last != 0) {
 				freopen(argv[1], "wt", db);
 				saveVec(&book, db);
 				last = 'w';
 			}
-		} elif (!strCmp(command, "change")) {
+		} elif (strCmp(command, "change")) {
 			scanf("%d", &i);
 			stringScan(&s);
-			if (!strCmp(s.s, "name")) {                  // unsafe
+			if (strCmp(s.s, "name")) {                  // unsafe
 				stringScan(&h.name);
 				vecChange(i, h, 1, &book);
-			} elif (!strCmp(s.s, "number")) {
+			} elif (strCmp(s.s, "number")) {
 				read(&h.tel, &h.stel);
 				vecChange(i, h, 2, &book);
-			} elif (!strCmp(s.s, "both")) {
+			} elif (strCmp(s.s, "both")) {
 				stringScan(&h.name);
 				read(&h.tel, &h.stel);
 				vecChange(i, h, 3, &book);
@@ -439,7 +449,7 @@ int main(int argc, char *argv[]) {
 			} else
 				fprintf(stderr, "\nFATAL ERROR: something changed, without file of saving => no people in book\n"
 				                "Continue working, ignoring writing out of memory\n");
-		} elif (!strCmp(command, "help")) {
+		} elif (strCmp(command, "help")) {
 			fprintf(stderr, "@Help (with debug info):\n  \"create <name> <tel. number>\" - add person to base\n"
 				   "  \"find <number>\" or \"find <part of name>\" - get list of found persons\n"
 				   "  \"find *\" - print all info from database\n"
@@ -447,7 +457,7 @@ int main(int argc, char *argv[]) {
 				   " or \"change <id> both <new name> <new tel. number>\" - change existing person's info\n"
 				   "  \"delete <id>\" - delete person from base\n"
 				   "  \"exit\" - quit application (information is saved after every action)\n");
-		} elif (!strCmp(command, "exit")) {
+		} elif (strCmp(command, "exit")) {
 			break;
 		} else
 			fprintf(stderr, "Error: %s - not a command\n", command);
