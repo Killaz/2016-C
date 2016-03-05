@@ -12,7 +12,7 @@
 				a %= b;
 			else
 				b %= a;
-		return (a + b) * sgn;
+		return (a + b); //* sgn;
 	}
 	int rational::lcm(int a, int b) {
 		return (int) ((lld) a * b / gcd(a, b));
@@ -33,10 +33,9 @@
 		int gcdV = gcd(q, v);
 		this->q = q / gcdV;
 		if (v < 0) {
-			this->v = -v / gcdV;
 			this->q = -this->q;
-		} else
-			this->v = v / gcdV;
+		}
+		this->v = v / gcdV;
 	}
 	rational::rational() {
 		this->q = this->v = 0;
@@ -67,8 +66,10 @@
 		return *this * r.rollV();
 	}
 	rational rational::operator+ (const rational &r) const {
-		if (this->v < 0 || r.v < 0)
+		if (this->v < 0 || r.v < 0) {
+			printf("this = %d %d; r = %d %d\n", this->q, this->v, r.q, r.v);
 			return unsafeCreate(1, -1);
+		}
 		if ((this->v == 0) ^ (r.v == 0))
 			return unsafeCreate(sign((this->v == 0) ? this->q : r.q), 0);
 		if (this->v == 0 && r.v == 0) {
