@@ -18,10 +18,12 @@ class rational {
 	rational();
 	rational rollV() const;
 	void roll();
-	rational operator-() const;
+	rational operator-(void) const;
 	rational operator* (const rational &r) const;
+//	rational rational::operator* (const rational &r) const {
 	rational operator/ (const rational &r) const;
 	rational operator+ (const rational &r) const;
+//	rational rational::operator+ (const rational &r) const {
 	rational operator- (const rational &r) const;
 	void operator+= (const rational &r);
 	void operator-= (const rational &r);

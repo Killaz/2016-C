@@ -41,13 +41,13 @@
 	rational::rational() {
 		this->q = this->v = 0;
 	}
-	rational rational::rollV() {
+	rational rational::rollV() const {
 		return rational(this->v, this->q);
 	}
 	void rational::roll() {
 		*this = this->rollV();
 	}
-	rational rational::operator-() const {
+	rational rational::operator- (void) const {
 		return rational(-this->q, this->v);
 	}
 	rational rational::operator* (const rational &r) const {
@@ -84,8 +84,7 @@
 		return rational(q / gcdV, v / gcdV);
 	}
 	rational rational::operator- (const rational &r) const {
-		r = -r;
-		return *this + r;
+		return *this + (-r);
 	}
 	void rational::operator+= (const rational &r) {
 		*this = *this + r;
