@@ -4,7 +4,7 @@
 typedef long long lld;
 
 
-extern class rational {
+class rational {
 	private:
 	int q, v;     // r = q / v ;   v = 0 => +-inf ;   v < 0 => invalid
 	static int gcd(int a, int b);
