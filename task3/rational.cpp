@@ -47,7 +47,7 @@
 	void rational::roll() {
 		*this = this->rollV();
 	}
-	rational rational::operator-() {
+	rational rational::operator-(){
 		return rational(-this->q, this->v);
 	}
 	rational rational::operator* (rational r) {
