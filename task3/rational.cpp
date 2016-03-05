@@ -47,10 +47,10 @@
 	void rational::roll() {
 		*this = this->rollV();
 	}
-	rational rational::operator-(){
+	rational rational::operator-() const {
 		return rational(-this->q, this->v);
 	}
-	rational rational::operator* (rational r) {
+	rational rational::operator* (const rational &r) const {
 		rational ans;
 		if (this->v < 0 || r.v < 0)
 			return unsafeCreate(1, -1);
@@ -63,10 +63,10 @@
 		ans.v = (r.v / gcd1) * (this->v / gcd2);
 		return ans;
 	}
-	rational rational::operator/ (rational r) {
+	rational rational::operator/ (const rational &r) const {
 		return *this * r.rollV();
 	}
-	rational rational::operator+ (rational r) {
+	rational rational::operator+ (const rational &r) const {
 		if (this->v < 0 || r.v < 0)
 			return unsafeCreate(1, -1);
 		if ((this->v == 0) ^ (r.v == 0))
@@ -83,26 +83,26 @@
 		gcdV = gcd(q, v);
 		return rational(q / gcdV, v / gcdV);
 	}
-	rational rational::operator- (rational r) {
+	rational rational::operator- (const rational &r) const {
 		r = -r;
 		return *this + r;
 	}
-	void rational::operator+= (rational r) {
+	void rational::operator+= (const rational &r) {
 		*this = *this + r;
 	}
-	void rational::operator-= (rational r) {
+	void rational::operator-= (const rational &r) {
 		*this = *this - r;
 	}
-	void rational::operator*= (rational r) {
+	void rational::operator*= (const rational &r) {
 		*this = *this * r;
 	}
-	void rational::operator/= (rational r) {
+	void rational::operator/= (const rational &r) {
 		*this = *this / r;
 	}
 	double rational::getValue() const {
 		return (double) this->q / this->v;
 	}
-	bool rational::operator> (rational r) {
+	bool rational::operator> (const rational &r) const {
 		return this->getValue() > r.getValue();
 	}
 	int rational::getNum() const {
