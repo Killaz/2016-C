@@ -67,7 +67,6 @@
 	}
 	rational rational::operator+ (const rational &r) const {
 		if (this->v < 0 || r.v < 0) {
-			printf("this = %d %d; r = %d %d\n", this->q, this->v, r.q, r.v);
 			return unsafeCreate(1, -1);
 		}
 		if ((this->v == 0) ^ (r.v == 0))
